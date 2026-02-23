@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "omr-sam2-grader"
+version = "0.1.0"
+description = "OMR grader using Grounding DINO + SAM-2 for multiple-choice exams (Colab-first workflow)."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+  { name = "Your Name", email = "your@email.com" }
+]
+keywords = ["OMR", "SAM2", "GroundingDINO", "ComputerVision", "Colab", "Grading"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent"
+]
+dependencies = [
+  "pymupdf",
+  "rapidocr-onnxruntime",
+  "ultralytics",
+  "transformers",
+  "torch",
+  "torchvision",
+  "opencv-python",
+  "Pillow",
+  "matplotlib",
+  "numpy",
+  "pandas",
+  "openpyxl"
+]
+
+[project.urls]
+Homepage = "https://github.com/<TU_USUARIO>/OMR-SAM-2-Grader"
+Repository = "https://github.com/<TU_USUARIO>/OMR-SAM-2-Grader"
+Issues = "https://github.com/<TU_USUARIO>/OMR-SAM-2-Grader/issues"
+
+[tool.setuptools]
+package-dir = {"" = "."}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["omr_sam2_grader*"]
