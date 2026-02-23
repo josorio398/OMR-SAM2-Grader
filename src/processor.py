@@ -2,9 +2,11 @@ import os
 import cv2
 import numpy as np
 import pandas as pd
-import fitz
+import fitz  # PyMuPDF
 import torch
 import re
+import shutil
+import gc
 from PIL import Image
 from transformers import AutoProcessor, AutoModelForZeroShotObjectDetection
 from ultralytics import SAM
@@ -12,40 +14,50 @@ from rapidocr_onnxruntime import RapidOCR
 
 class OMRProcessor:
     def __init__(self):
+        # ---------------------------------------------------------
+        # 0. PREPARAR CARPETAS DE DIAGNÓSTICO
+        # ---------------------------------------------------------
+        self.dir_antes = "debug_antes"
+        self.dir_despues = "debug_despues"
+        os.makedirs(self.dir_antes, exist_ok=True)
+        os.makedirs(self.dir_despues, exist_ok=True)
+
+        # ---------------------------------------------------------
+        # 1. CARGA DE MODELOS
+        # ---------------------------------------------------------
         print("⏳ Cargando modelos de Inteligencia Artificial en memoria...")
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        
-        # Carga IDÉNTICA a tu Colab original
+
         model_id = "IDEA-Research/grounding-dino-base"
         self.processor = AutoProcessor.from_pretrained(model_id)
         self.model = AutoModelForZeroShotObjectDetection.from_pretrained(model_id).to(self.device)
+
         self.sam_model = SAM("models/sam2_b.pt")
         self.ocr_engine = RapidOCR()
-        
-        os.makedirs("debug_antes", exist_ok=True)
-        os.makedirs("debug_despues", exist_ok=True)
         print("✅ Modelos cargados exitosamente.\n")
 
     def process_pdf(self, pdf_filename):
+        # ---------------------------------------------------------
+        # 2. CARGA DEL ARCHIVO PDF
+        # ---------------------------------------------------------
         doc = fitz.open(pdf_filename)
         total_paginas = len(doc)
         print(f"\n📄 PDF cargado: '{pdf_filename}' con {total_paginas} páginas.")
-        
+
         datos_salon = []
 
-        # =========================================================
-        # INICIO DEL BUCLE MAESTRO (IDÉNTICO AL ORIGINAL)
-        # =========================================================
+        # ---------------------------------------------------------
+        # 3. BUCLE MAESTRO (100% FIEL A TU DESARROLLO)
+        # ---------------------------------------------------------
         for num_pagina in range(total_paginas):
             print(f"\n{'-'*50}")
             print(f"🚀 Procesando página {num_pagina + 1} de {total_paginas}...")
             print(f"{'-'*50}")
 
             try:
-                # --- GESTIÓN DE MEMORIA (Añadido crucial para lotes) ---
+                # [MANTENIMIENTO DE MEMORIA]
                 torch.cuda.empty_cache()
-                import gc; gc.collect()
-                # -------------------------------------------------------
+                gc.collect()
 
                 page = doc[num_pagina]
                 pix = page.get_pixmap(dpi=300)
@@ -95,7 +107,7 @@ class OMRProcessor:
                 alto_deseado = int(image_cv_recortada.shape[0] * escala)
                 image_cv = cv2.resize(image_cv_recortada, (ancho_deseado, alto_deseado), interpolation=cv2.INTER_CUBIC)
 
-                cv2.imwrite(f"debug_antes/pagina_{num_pagina + 1}.jpg", image_cv)
+                cv2.imwrite(f"{self.dir_antes}/pagina_{num_pagina + 1}.jpg", image_cv)
 
                 image_cv_rgb = cv2.cvtColor(image_cv, cv2.COLOR_BGR2RGB)
                 image_pil = Image.fromarray(image_cv_rgb)
@@ -172,8 +184,8 @@ class OMRProcessor:
                 def sort_column(col_data):
                     col_data.sort(key=lambda x: x['cy'])
                     sorted_final = []
-                    for k in range(0, len(col_data), 4):
-                        grupo = col_data[k:k+4]
+                    for i in range(0, len(col_data), 4):
+                        grupo = col_data[i:i+4]
                         grupo.sort(key=lambda x: x['cx'])
                         sorted_final.extend(grupo)
                     return sorted_final
@@ -193,7 +205,7 @@ class OMRProcessor:
                         pts = np.array(poligono, np.int32).reshape((-1, 1, 2))
                         cv2.fillPoly(overlay, [pts], (0, 255, 0))
                 cv2.addWeighted(overlay, 0.4, viz_image, 0.6, 0, viz_image)
-                cv2.imwrite(f"debug_despues/pagina_{num_pagina + 1}.jpg", viz_image)
+                cv2.imwrite(f"{self.dir_despues}/pagina_{num_pagina + 1}.jpg", viz_image)
 
                 # --- Lógica Estadística de Intensidad ---
                 image_gray = cv2.cvtColor(image_cv, cv2.COLOR_BGR2GRAY)
@@ -201,8 +213,8 @@ class OMRProcessor:
                 resultados_examen = {}
                 total_preguntas = min(20, len(mascaras_xy) // 4)
 
-                for p in range(total_preguntas):
-                    idx_inicio = p * 4
+                for i in range(total_preguntas):
+                    idx_inicio = i * 4
                     opciones_poligonos = mascaras_xy[idx_inicio : idx_inicio + 4]
                     promedios_intensidad = []
                     for poligono in opciones_poligonos:
@@ -227,7 +239,7 @@ class OMRProcessor:
                         marcadas = [letras[j] for j, prom in enumerate(promedios_intensidad) if prom <= umbral_marcada]
                         respuesta_final = "Anulada" if len(marcadas) > 1 else marcadas[0]
 
-                    resultados_examen[p + 1] = respuesta_final
+                    resultados_examen[i + 1] = respuesta_final
 
                 # ====================================================================
                 # EXTRACCIÓN DE ENCABEZADO (BÚSQUEDA DIRECTA POR FORMA DE DATO)
@@ -241,16 +253,16 @@ class OMRProcessor:
                 # Limpiamos espacios dobles para facilitar la lectura matemática
                 texto_limpio = re.sub(r'\s+', ' ', texto_completo)
 
-                # 1. DOCUMENTO
+                # 1. DOCUMENTO: Único bloque de 8 a 12 dígitos en todo el encabezado
                 doc_match = re.search(r'\b(\d{8,12})\b', texto_limpio)
 
-                # 2. CUADERNILLO
+                # 2. CUADERNILLO: Letra + separador + 2020 + separador + números.
                 cuad_match = re.search(r'\b([A-Za-z][_\-\s]\d{4}[_\-\s]\d[_\-\s]\d+)\b', texto_limpio)
                 cuadernillo_final = "No detectado"
                 if cuad_match:
                     cuadernillo_final = re.sub(r'[\-\s]', '_', cuad_match.group(1).upper())
 
-                # 3. CURSO
+                # 3. CURSO: Número de colegio (601, 702, 1001, 1104, etc.)
                 curso_match = None
                 posibles_cursos = re.findall(r'\b([6-9]0[0-9]|1[01]0[0-9])\b', texto_limpio)
                 if posibles_cursos:
@@ -269,8 +281,8 @@ class OMRProcessor:
                     "Numero de Documento": datos_encabezado["Numero de Documento"],
                     "Numero de Cuadernillo": datos_encabezado["Numero de Cuadernillo"]
                 }
-                for r in range(1, 21):
-                    fila_estudiante[f"RP{r}"] = resultados_examen.get(r, "Sin datos")
+                for i in range(1, 21):
+                    fila_estudiante[f"RP{i}"] = resultados_examen.get(i, "Sin datos")
 
                 datos_salon.append(fila_estudiante)
                 print(f"✅ Página {num_pagina + 1} procesada. (Curso: {datos_encabezado['Curso']} | Doc: {datos_encabezado['Numero de Documento']} | Cuad: {datos_encabezado['Numero de Cuadernillo']}).")
@@ -284,6 +296,11 @@ class OMRProcessor:
                     "Numero de Cuadernillo": str(e)
                 })
 
-        output_name = "Resultados_Masivos_Salon.xlsx"
-        pd.DataFrame(datos_salon).to_excel(output_name, index=False, engine='openpyxl')
-        return output_name
+        # ---------------------------------------------------------
+        # 4. EXPORTACIÓN FINAL A EXCEL
+        # ---------------------------------------------------------
+        df_resultados_finales = pd.DataFrame(datos_salon)
+        nombre_archivo_salida = "Resultados_Masivos_Salon.xlsx"
+        df_resultados_finales.to_excel(nombre_archivo_salida, index=False, engine='openpyxl')
+        
+        return nombre_archivo_salida
