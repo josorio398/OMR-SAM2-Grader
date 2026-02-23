@@ -1,26 +1,20 @@
-import os
 import argparse
-from src.processor import OMRProcessor
+import os
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--file", type=str, help="Ruta del archivo PDF")
+    parser.add_argument("--file", type=str, required=True, help="Ruta del archivo PDF")
     args = parser.parse_args()
 
-    print("--- 🎓 Calificador OMR SAM-2 ---")
-    
     pdf_path = args.file
 
-    # Si no se pasa argumento, busca el archivo por defecto en inputs/
-    if not pdf_path:
-        pdf_path = "inputs/examen.pdf"
-
     if os.path.exists(pdf_path):
-        engine = OMRProcessor()
-        resultado = engine.process_pdf(pdf_path)
-        print(f"✨ Proceso completado con éxito.")
+        from src.processor import OMRProcessor
+        procesador = OMRProcessor()
+        resultado = procesador.process_pdf(pdf_path)
+        print(f"\n✨ Proceso completado. Archivo generado: {resultado}")
     else:
-        print(f"❌ Error: No se encontró el archivo en {pdf_path}")
+        print(f"\n❌ Error: No se encontró el archivo en la ruta {pdf_path}")
 
 if __name__ == "__main__":
     main()
