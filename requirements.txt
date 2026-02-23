@@ -6,5 +6,7 @@ torch
 torchvision
 opencv-python
 Pillow
+matplotlib
+numpy
 pandas
 openpyxl
