@@ -1,43 +1,40 @@
-import os
 import cv2
 import numpy as np
 import pandas as pd
 import fitz
-import re
-from PIL import Image
+from .detector import OMRDetector
+from .ocr_engine import OMROCR
 
 class OMRProcessor:
     def __init__(self):
-        # Aquí se inicializarán los modelos más adelante
-        os.makedirs("debug/antes", exist_ok=True)
-        os.makedirs("debug/despues", exist_ok=True)
+        print("⏳ Inicializando modelos de IA...")
+        self.detector = OMRDetector()
+        self.ocr = OMROCR()
 
-    def process_pdf(self, pdf_path, output_name="Resultados_Masivos.xlsx"):
+    def process_pdf(self, pdf_path):
         doc = fitz.open(pdf_path)
-        datos_salon = []
+        datos_finales = []
         
-        print(f"📄 Procesando {len(doc)} páginas...")
-        
-        for num_pagina in range(len(doc)):
-            try:
-                page = doc[num_pagina]
-                pix = page.get_pixmap(dpi=300)
-                img_array = np.frombuffer(pix.samples, dtype=np.uint8).reshape((pix.height, pix.width, 3))
-                image_cv_raw = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
+        for i in range(len(doc)):
+            page = doc[i]
+            pix = page.get_pixmap(dpi=300)
+            img = np.frombuffer(pix.samples, dtype=np.uint8).reshape((pix.height, pix.width, 3))
+            
+            # 1. Extraer encabezado con OCR
+            header_img = img[0:int(img.shape[0] * 0.35), :]
+            header_data = self.ocr.extract_header(header_img)
+            
+            # 2. Aquí integrarías el bucle de calificación que ya tienes...
+            # (Por brevedad, guardamos los datos del encabezado)
+            
+            fila = {
+                "Pagina": i + 1,
+                "Documento": header_data["documento"],
+                "Cuadernillo": header_data["cuadernillo"]
+            }
+            datos_finales.append(fila)
+            print(f"✅ Página {i+1} procesada.")
 
-                # --- Aquí irá la lógica de detección y OCR que ya tienes ---
-                # Por ahora, simulamos la extracción de datos
-                fila = {
-                    "Pagina_PDF": num_pagina + 1,
-                    "Curso": "Detectando...",
-                    "Documento": "Procesando..."
-                }
-                datos_salon.append(fila)
-                print(f"✅ Página {num_pagina + 1} lista.")
-
-            except Exception as e:
-                print(f"❌ Error en página {num_pagina + 1}: {e}")
-
-        df = pd.DataFrame(datos_salon)
-        df.to_excel(output_name, index=False)
-        return output_name
+        output = "Resultados_Finales.xlsx"
+        pd.DataFrame(datos_finales).to_excel(output, index=False)
+        return output
