@@ -1,0 +1,10 @@
+pymupdf
+rapidocr-onnxruntime
+ultralytics
+transformers
+torch
+torchvision
+opencv-python
+Pillow
+pandas
+openpyxl
