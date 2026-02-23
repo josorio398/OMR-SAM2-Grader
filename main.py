@@ -11,10 +11,9 @@ def main():
     if os.path.exists(pdf_path):
         from src.processor import OMRProcessor
         procesador = OMRProcessor()
-        resultado = procesador.process_pdf(pdf_path)
-        print(f"\n✨ Proceso completado. Archivo generado: {resultado}")
+        procesador.process_pdf(pdf_path)
     else:
-        print(f"\n❌ Error: No se encontró el archivo en la ruta {pdf_path}")
+        print(f"\n❌ Error: No se encontró el archivo {pdf_path}")
 
 if __name__ == "__main__":
     main()
