@@ -1,0 +1,94 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": []
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "source": [
+        "<center> <font size=\"6\"><b> CALIFICADOR CON RECONOCIMIENTO ÓPTICO DE MARCAS SAM-2</b>\n",
+        "<center> (OMR-SAM2-Grader)<center>"
+      ],
+      "metadata": {
+        "id": "dtees7XMdfPp"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "#  **Instalación**"
+      ],
+      "metadata": {
+        "id": "I8tr6sHLhy8_"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "!git clone https://github.com/josorio398/OMR-SAM2-Grader.git\n",
+        "%cd OMR-SAM2-Grader\n",
+        "!pip install -q -r requirements.txt\n",
+        "\n",
+        "import torch\n",
+        "print(f\"✅ Entorno listo en: {'GPU (CUDA)' if torch.cuda.is_available() else 'CPU'}\")"
+      ],
+      "metadata": {
+        "id": "T1hBUuSY3M68"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "#  **Smoke test**"
+      ],
+      "metadata": {
+        "id": "weL_ncnIiS5V"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "!python scripts/smoke_test.py"
+      ],
+      "metadata": {
+        "id": "l1bD74qz0IAn"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# **Procesamiento**"
+      ],
+      "metadata": {
+        "id": "up2MtEqU4sHP"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "from omr_sam2_grader.colab_entry import run\n",
+        "run()"
+      ],
+      "metadata": {
+        "id": "RLizJGIN0UFl"
+      },
+      "execution_count": null,
+      "outputs": []
+    }
+  ]
+}
